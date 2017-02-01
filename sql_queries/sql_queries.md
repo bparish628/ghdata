@@ -8,8 +8,8 @@ of a where clause will make any of them specific to a certain repo:
 ## Number of Members per Project
 
 
-	SELECT count(distinct project_members.user_id) as num_members, projects.name as project_name, url
-	FROM project_members JOIN projects on project_members.repo_id = projects.id
+	SELECT count(DISTINCT project_members.user_id) AS num_members, projects.name AS project_name, url
+	FROM project_members JOIN projects ON project_members.repo_id = projects.id
 	GROUP BY repo_id
 
 
@@ -31,25 +31,25 @@ example: author writes some code and does a pull request.  committer approves/me
 
 For the following SQL, I am considering the author to be the contributer.
 
-	SELECT projects.name as project_name, projects.url as url, count(distinct commits.author_id) as num_contributers
+	SELECT projects.name AS project_name, projects.url AS url, count(DISTINCT commits.author_id) AS num_contributers
 	FROM commits 
-	JOIN project_commits on commits.id = project_commits.commit_id
-	JOIN projects on projects.id = project_commits.project_id
+	JOIN project_commits ON commits.id = project_commits.commit_id
+	JOIN projects ON projects.id = project_commits.project_id
 	GROUP BY project_commits.project_id
 	
 ## total number of commits per project:
 
-	SELECT count(commits.id) as num_commits, projects.name as project_name, projects.url as url
+	SELECT count(commits.id) AS num_commits, projects.name AS project_name, projects.url AS url
 	FROM commits 
-		JOIN project_commits on commits.id = project_commits.project_id
-		JOIN projects on projects.id = project_commits.project_id
+		JOIN project_commits ON commits.id = project_commits.project_id
+		JOIN projects ON projects.id = project_commits.project_id
 	GROUP BY projects.id          
 	
 ## Project Watchers
 
-	SELECT count(user_id) as num_watchers, projects.name as project_name, url
+	SELECT count(user_id) AS num_watchers, projects.name AS project_name, url
 	FROM watchers
-		JOIN projects on watchers.repo_id = projects.id
+		JOIN projects ON watchers.repo_id = projects.id
 	GROUP BY projects.id
 
 
@@ -80,10 +80,10 @@ This query will then be combined with the median calculation from above
 to determine median commits per repo per contributor (or it could be used
 in combination with other methods of determining activity level)
 
-	SELECT project_commits.project_id as project_id, commits.author_id as author_id, count(project_commits.commit_id) as num_commits
+	SELECT project_commits.project_id AS project_id, commits.author_id AS author_id, count(project_commits.commit_id) AS num_commits
 		FROM commits
-	    JOIN project_commits on commits.id = project_commits.commit_id
-	    JOIN projects on projects.id = project_commits.project_id
+	    JOIN project_commits ON commits.id = project_commits.commit_id
+	    JOIN projects ON projects.id = project_commits.project_id
 	GROUP BY project_id, author_id
 
 I am working on a combination query for the median of contributer activity, but so far my attempts take too long to run and MySQL server times out.
@@ -92,21 +92,21 @@ I am working on a combination query for the median of contributer activity, but 
 
 ### Pull Requests Opened
 
-	SELECT count(distinct pull_request_id) as num_opened, projects.name as project_name, projects.url as url
+	SELECT count(DISTINCT pull_request_id) AS num_opened, projects.name AS project_name, projects.url AS url
 	FROM msr14.pull_request_history
-	    join pull_requests on pull_request_history.pull_request_id = pull_requests.id
-	    join projects on pull_requests.base_repo_id = projects.id
-	where action = 'opened'
-	group by projects.id
+	    JOIN pull_requests ON pull_request_history.pull_request_id = pull_requests.id
+	    JOIN projects ON pull_requests.base_repo_id = projects.id
+	WHERE action = 'opened'
+	GROUP BY projects.id
 	
 ### Pull Requests Closed
 
-	SELECT count(distinct pull_request_id) as num_closed, projects.name as project_name, projects.url as url
+	SELECT count(DISTINCT pull_request_id) AS num_closed, projects.name AS project_name, projects.url AS url
 	FROM msr14.pull_request_history
-	    join pull_requests on pull_request_history.pull_request_id = pull_requests.id
-	    join projects on pull_requests.base_repo_id = projects.id
-	where action = 'closed'
-	group by projects.id
+	    JOIN pull_requests ON pull_request_history.pull_request_id = pull_requests.id
+	    JOIN projects ON pull_requests.base_repo_id = projects.id
+	WHERE action = 'closed'
+	GROUP BY projects.id
 
 ### Pull Requests Accepted
 
@@ -123,10 +123,10 @@ Note: some of these results look unusual, in that projects that I would believe 
 
 Possibly these groups do not use pull requests as often and edit master directly?
 
-	SELECT count(distinct pull_request_id) as num_approved, projects.name as project_name, projects.url as url
+	SELECT count(DISTINCT pull_request_id) AS num_approved, projects.name AS project_name, projects.url AS url
 	FROM msr14.pull_request_history
-		JOIN pull_requests on pull_request_history.pull_request_id = pull_requests.id
-		JOIN projects on pull_requests.base_repo_id = projects.id
+		JOIN pull_requests ON pull_request_history.pull_request_id = pull_requests.id
+		JOIN projects ON pull_requests.base_repo_id = projects.id
 	WHERE action = 'merged'
 	GROUP BY projects.id
 	
@@ -136,10 +136,10 @@ Possibly these groups do not use pull requests as often and edit master directly
 
 Assume that a pull request with a history record of being 'closed' but lacking one of being 'merged' has been rejected.
 
-	SELECT count(distinct pull_request_id) as num_rejected, projects.name as project_name, projects.url as url
+	SELECT count(DISTINCT pull_request_id) AS num_rejected, projects.name AS project_name, projects.url AS url
 	FROM msr14.pull_request_history
-		JOIN pull_requests on pull_request_history.pull_request_id = pull_requests.id
-		JOIN projects on pull_requests.base_repo_id = projects.id
+		JOIN pull_requests ON pull_request_history.pull_request_id = pull_requests.id
+		JOIN projects ON pull_requests.base_repo_id = projects.id
 	WHERE action = 'closed' AND pull_request_id not in 
 		(SELECT pull_request_id
 		FROM msr14.pull_request_history
@@ -148,36 +148,36 @@ Assume that a pull request with a history record of being 'closed' but lacking o
 
 ## Total number of organizations by project making pull requests (approved or not):
 
-	SELECT count(distinct org_id) as num_organizations, projects.name as project_name, url
+	SELECT count(DISTINCT org_id) AS num_organizations, projects.name AS project_name, url
 	FROM
 		organization_members
-	    join users on organization_members.user_id = users.id
-	    join pull_request_history on pull_request_history.actor_id = users.id
-	    join pull_requests on pull_request_history.pull_request_id = pull_requests.id
-	    join projects on pull_requests.base_repo_id = projects.id
+	    JOIN users ON organization_members.user_id = users.id
+	    JOIN pull_request_history ON pull_request_history.actor_id = users.id
+	    JOIN pull_requests ON pull_request_history.pull_request_id = pull_requests.id
+	    JOIN projects ON pull_requests.base_repo_id = projects.id
 	WHERE pull_request_history.action = 'opened'
-	group by projects.id
+	GROUP BY projects.id
 
 Alternately, using the "company" field in the users table instead of the organization:
 
-	SELECT count(distinct company) as num_companies, projects.name as project_name, url
+	SELECT count(DISTINCT company) AS num_companies, projects.name AS project_name, url
 	FROM
 	    users
-	    JOIN pull_request_history on pull_request_history.actor_id = users.id
-	    JOIN pull_requests on pull_request_history.pull_request_id = pull_requests.id
-	    JOIN projects on pull_requests.base_repo_id = projects.id
+	    JOIN pull_request_history ON pull_request_history.actor_id = users.id
+	    JOIN pull_requests ON pull_request_history.pull_request_id = pull_requests.id
+	    JOIN projects ON pull_requests.base_repo_id = projects.id
 	WHERE pull_request_history.action = 'opened' 
 	GROUP BY projects.id
 	
 ## Number of organizations by project making pull requests that are approved:
 
-	SELECT count(distinct org_id) as num_organizations, projects.name as project_name, url
+	SELECT count(DISTINCT org_id) AS num_organizations, projects.name AS project_name, url
 	FROM
 		organization_members
-	    JOIN users on organization_members.user_id = users.id
-	    JOIN pull_request_history on pull_request_history.actor_id = users.id
-	    JOIN pull_requests on pull_request_history.pull_request_id = pull_requests.id
-	    JOIN projects on pull_requests.base_repo_id = projects.id
+	    JOIN users ON organization_members.user_id = users.id
+	    JOIN pull_request_history ON pull_request_history.actor_id = users.id
+	    JOIN pull_requests ON pull_request_history.pull_request_id = pull_requests.id
+	    JOIN projects ON pull_requests.base_repo_id = projects.id
 	WHERE pull_request_history.action = 'opened'
 		AND pull_requests.id in
 	    (SELECT pull_request_id 
@@ -191,10 +191,10 @@ Alternately, using the "company" field in the users table instead of the organiz
 
 ### Number of Open Issues (current)
 
-	SELECT count(distinct issue_events.issue_id) as num_open_issues, projects.name as project_name, url as url
+	SELECT count(DISTINCT issue_events.issue_id) AS num_open_issues, projects.name AS project_name, url AS url
 	FROM msr14.issue_events
-		JOIN issues on issues.id = issue_events.issue_id
-		JOIN projects on issues.repo_id = projects.id
+		JOIN issues ON issues.id = issue_events.issue_id
+		JOIN projects ON issues.repo_id = projects.id
 	WHERE issue_events.issue_id not in
 		(SELECT issue_id FROM msr14.issue_events
 		WHERE action = 'closed')
@@ -207,12 +207,12 @@ Alternately, using the "company" field in the users table instead of the organiz
 	SELECT avg(avg_num_comments), project_name
 	FROM
 	(
-		SELECT count(comment_id) as avg_num_comments, projects.name as project_name, projects.id as project_id
+		SELECT count(comment_id) AS avg_num_comments, projects.name AS project_name, projects.id AS project_id
 		FROM msr14.issue_comments
-			JOIN issues on issue_comments.issue_id = issues.id
-			JOIN projects on issues.repo_id = projects.id
+			JOIN issues ON issue_comments.issue_id = issues.id
+			JOIN projects ON issues.repo_id = projects.id
 		GROUP BY projects.id, issues.id
-	) as comments_per_issue
+	) AS comments_per_issue
 	GROUP BY project_id
 
 
@@ -223,44 +223,44 @@ Alternately, using the "company" field in the users table instead of the organiz
 	
 Days open by issue:
 
-	SELECT issue_id, open_date, closed_date, DATEDIFF(closed_date, open_date) as days_open, projects.name as project_name, url
+	SELECT issue_id, open_date, closed_date, DATEDIFF(closed_date, open_date) AS days_open, projects.name AS project_name, url
 	FROM
-	(SELECT issues.id as issue_id, issues.created_at as open_date, issue_events.created_at as closed_date, repo_id
+	(SELECT issues.id AS issue_id, issues.created_at AS open_date, issue_events.created_at AS closed_date, repo_id
 	FROM msr14.issue_events
-		JOIN issues on issues.id = issue_events.issue_id
-	WHERE action = 'closed') as closed_issues
-	JOIN projects on projects.id = closed_issues.repo_id
+		JOIN issues ON issues.id = issue_events.issue_id
+	WHERE action = 'closed') AS closed_issues
+	JOIN projects ON projects.id = closed_issues.repo_id
 	
 Average days issue was open before closing by project:
 
-	SELECT avg(days_open) as average_days_til_issue_closed, project_name, url
+	SELECT avg(days_open) AS average_days_til_issue_closed, project_name, url
 	FROM
 	(
-		SELECT DATEDIFF(closed_date, open_date) as days_open, projects.name as project_name, url, projects.id as project_id
+		SELECT DATEDIFF(closed_date, open_date) AS days_open, projects.name AS project_name, url, projects.id AS project_id
 		FROM
-			(SELECT issues.id as issue_id, issues.created_at as open_date, issue_events.created_at as closed_date, repo_id
+			(SELECT issues.id AS issue_id, issues.created_at AS open_date, issue_events.created_at AS closed_date, repo_id
 			FROM msr14.issue_events
-				JOIN issues on issues.id = issue_events.issue_id
-			WHERE action = 'closed') as closed_issues
-		JOIN projects on projects.id = closed_issues.repo_id) as issues_days_open
+				JOIN issues ON issues.id = issue_events.issue_id
+			WHERE action = 'closed') AS closed_issues
+		JOIN projects ON projects.id = closed_issues.repo_id) AS issues_days_open
 	GROUP BY project_id
 
 ## Average amount of time currently open issues have been open (excludes closed issues):
 	
-	SELECT avg(date_difference) / 365.25 as average_in_years, avg(date_difference) as average_in_days, project_name, url
+	SELECT avg(date_difference) / 365.25 AS average_in_years, avg(date_difference) AS average_in_days, project_name, url
 	FROM
 	(
-		SELECT CURDATE() as curr_date, open_date, DATEDIFF(CURDATE(), open_date) as date_difference, issue_id, project_name, url, project_id
+		SELECT CURDATE() AS curr_date, open_date, DATEDIFF(CURDATE(), open_date) AS date_difference, issue_id, project_name, url, project_id
 		FROM
-			(SELECT distinct issue_events.issue_id as issue_id, projects.name as project_name, url as url, issues.created_at as open_date, projects.id as project_id
+			(SELECT DISTINCT issue_events.issue_id AS issue_id, projects.name AS project_name, url AS url, issues.created_at AS open_date, projects.id AS project_id
 				FROM msr14.issue_events
-					JOIN issues on issues.id = issue_events.issue_id
-					JOIN projects on issues.repo_id = projects.id
+					JOIN issues ON issues.id = issue_events.issue_id
+					JOIN projects ON issues.repo_id = projects.id
 				WHERE issue_events.issue_id not in
 					(SELECT issue_id FROM msr14.issue_events
 					WHERE action = 'closed')
-			) as open_issues
-	) as date_diffs
+			) AS open_issues
+	) AS date_diffs
 	GROUP BY project_id
 	
 ## Issue tags by project (all tags):
@@ -269,41 +269,41 @@ A possibility is that some communities handle tags differently from others, and 
 This may become a problem in future queries I will write specifically targeting the "bug" tag (in that the results may not
 be a good comparison between repos)
 	
-	SELECT count(issue_id) as num_issues_with_this_tag, repo_labels.name as tag, projects.name as project_name, url 
+	SELECT count(issue_id) AS num_issues_with_this_tag, repo_labels.name AS tag, projects.name AS project_name, url 
 	FROM msr14.repo_labels
-		JOIN projects on repo_labels.repo_id = projects.id
-		JOIN issue_labels on issue_labels.label_id = repo_labels.id
+		JOIN projects ON repo_labels.repo_id = projects.id
+		JOIN issue_labels ON issue_labels.label_id = repo_labels.id
 	GROUP BY projects.id, repo_labels.id 
 
 ## Number of issues tagged as 'bug' by project:
 	
-	SELECT count(issue_id) num_bug_tags, repo_labels.name as tag, projects.name as project_name, url 
+	SELECT count(issue_id) num_bug_tags, repo_labels.name AS tag, projects.name AS project_name, url 
 	FROM msr14.repo_labels
-		JOIN projects on repo_labels.repo_id = projects.id
-		JOIN issue_labels on issue_labels.label_id = repo_labels.id
+		JOIN projects ON repo_labels.repo_id = projects.id
+		JOIN issue_labels ON issue_labels.label_id = repo_labels.id
 	WHERE repo_labels.name = 'bug'
 	GROUP BY projects.id, repo_labels.id 
 	
 ## Average days an issue tagged with 'bug' exists until a project member comments:
 
-	SELECT avg(time_to_member_comment_in_days) as avg_days_to_member_comment, project_name, url
+	SELECT avg(time_to_member_comment_in_days) AS avg_days_to_member_comment, project_name, url
 	FROM
 	(
 		SELECT DATEDIFF(earliest_member_comment, issue_created) time_to_member_comment_in_days, project_id, issue_id, project_name, url
 		FROM
-			(SELECT projects.id as project_id, 
-					MIN(issue_comments.created_at) as earliest_member_comment, 
-					issues.created_at as issue_created, 
-					issues.id as issue_id, projects.name as project_name, url
+			(SELECT projects.id AS project_id, 
+					MIN(issue_comments.created_at) AS earliest_member_comment, 
+					issues.created_at AS issue_created, 
+					issues.id AS issue_id, projects.name AS project_name, url
 			FROM msr14.repo_labels
-				JOIN projects on repo_labels.repo_id = projects.id
-				JOIN issue_labels on issue_labels.label_id = repo_labels.id
-				JOIN project_members on projects.id = project_members.repo_id
-				JOIN issues on issue_labels.issue_id = issues.id
-				JOIN issue_comments on issue_comments.issue_id = issues.id
+				JOIN projects ON repo_labels.repo_id = projects.id
+				JOIN issue_labels ON issue_labels.label_id = repo_labels.id
+				JOIN project_members ON projects.id = project_members.repo_id
+				JOIN issues ON issue_labels.issue_id = issues.id
+				JOIN issue_comments ON issue_comments.issue_id = issues.id
 			WHERE repo_labels.name = 'bug'
 				and issue_comments.user_id = project_members.user_id
-			GROUP BY issues.id) as earliest_member_comments) as time_to_member_comment
+			GROUP BY issues.id) AS earliest_member_comments) AS time_to_member_comment
 	GROUP BY project_id
 
 
